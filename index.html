@@ -1,0 +1,1455 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Petualangan Garuda Kecil - Belajar Pancasila</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Canvas Confetti CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <!-- FontAwesome Icons CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts: Fredoka & Nunito -->
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brandYellow: '#FFD166',
+                        brandRed: '#EF476F',
+                        brandBlue: '#118AB2',
+                        brandGreen: '#06D6A0',
+                        brandPurple: '#073B4C',
+                        brandOrange: '#FF9F1C'
+                    },
+                    fontFamily: {
+                        fredoka: ['Fredoka', 'sans-serif'],
+                        nunito: ['Nunito', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            font-family: 'Nunito', sans-serif;
+            background-color: #F4F0EA;
+            background-image: radial-gradient(#FFD166 1.5px, transparent 1.5px), radial-gradient(#118AB2 1.5px, #F7F9FC 1.5px);
+            background-size: 60px 60px;
+            background-position: 0 0, 30px 30px;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        h1, h2, h3, .font-title {
+            font-family: 'Fredoka', cursive;
+        }
+
+        /* Custom Bounce Animation for Game Mascot */
+        @keyframes floatSlow {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-12px) rotate(3deg); }
+        }
+
+        .animate-float {
+            animation: floatSlow 3.5s ease-in-out infinite;
+        }
+
+        @keyframes pulseGlow {
+            0%, 100% { transform: scale(1); box-shadow: 0 0 15px rgba(255, 209, 102, 0.6); }
+            50% { transform: scale(1.03); box-shadow: 0 0 25px rgba(255, 159, 28, 0.9); }
+        }
+
+        .animate-glow {
+            animation: pulseGlow 2s infinite;
+        }
+
+        /* Card flip effect */
+        .perspective-1000 {
+            perspective: 1000px;
+        }
+
+        .transform-style-3d {
+            transform-style: preserve-3d;
+            transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1);
+        }
+
+        .flipped {
+            transform: rotateY(180deg);
+        }
+
+        .backface-hidden {
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+        }
+
+        .rotate-y-180 {
+            transform: rotateY(180deg);
+        }
+
+        /* Drag and Drop styling */
+        .draggable-item {
+            cursor: grab;
+            touch-action: none;
+        }
+        .draggable-item:active {
+            cursor: grabbing;
+        }
+        .drop-target-active {
+            border-color: #06D6A0 !important;
+            background-color: #E6FFFA !important;
+            transform: scale(1.02);
+        }
+        .selected-item {
+            ring: 4px solid #FF9F1C;
+            transform: scale(1.05);
+        }
+    </style>
+</head>
+<body class="min-h-screen text-slate-800 flex flex-col justify-between overflow-x-hidden">
+
+    <!-- Top Header Navigation -->
+    <header class="bg-white/95 backdrop-blur shadow-md sticky top-0 z-50 border-b-4 border-brandYellow">
+        <div class="max-w-7xl mx-auto px-4 py-2 flex flex-wrap items-center justify-between gap-2">
+            
+            <!-- Logo & Mascot -->
+            <div class="flex items-center space-x-3 cursor-pointer" onclick="showSection('beranda')">
+                <div class="w-12 h-12 bg-brandYellow rounded-2xl flex items-center justify-center shadow-md text-2xl animate-bounce">
+                    🦅
+                </div>
+                <div>
+                    <h1 class="text-xl md:text-2xl font-bold text-brandPurple leading-none">Garuda Kecil</h1>
+                    <span class="text-xs font-bold text-brandBlue">Petualangan Pancasila Kelas 2</span>
+                </div>
+            </div>
+
+            <!-- Score & Progress Display -->
+            <div class="flex items-center space-x-3 bg-amber-50 px-4 py-1.5 rounded-full border-2 border-brandYellow shadow-inner">
+                <div class="flex items-center space-x-1 text-brandOrange font-bold text-sm md:text-base">
+                    <i class="fa-solid fa-star text-brandYellow text-lg drop-shadow"></i>
+                    <span id="globalScore">0</span> <span class="text-xs text-gray-500">Poin</span>
+                </div>
+                <div class="h-5 w-px bg-amber-200"></div>
+                <div class="flex items-center space-x-1 text-brandBlue font-bold text-sm md:text-base">
+                    <i class="fa-solid fa-award text-brandRed text-lg"></i>
+                    <span id="badgeCount">0</span>/5
+                </div>
+            </div>
+
+            <!-- Mobile Menu Button -->
+            <button onclick="toggleMobileMenu()" class="md:hidden bg-brandYellow hover:bg-amber-400 p-2 rounded-xl text-slate-800 font-bold focus:outline-none">
+                <i class="fa-solid fa-bars text-xl"></i>
+            </button>
+
+            <!-- Desktop Navigation Menu -->
+            <nav id="navMenu" class="hidden md:flex items-center space-x-1 w-full md:w-auto mt-2 md:mt-0">
+                <button onclick="showSection('beranda')" class="nav-btn active-nav px-3 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-1.5 hover:bg-amber-100 text-slate-700">
+                    <span>🏠</span> Beranda
+                </button>
+                <button onclick="showSection('materi')" class="nav-btn px-3 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-1.5 hover:bg-amber-100 text-slate-700">
+                    <span>📚</span> Materi
+                </button>
+                <button onclick="showSection('simulasi')" class="nav-btn px-3 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-1.5 hover:bg-amber-100 text-slate-700">
+                    <span>🔬</span> Simulasi
+                </button>
+                <button onclick="showSection('permainan')" class="nav-btn px-3 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-1.5 hover:bg-amber-100 text-slate-700">
+                    <span>🎮</span> Permainan
+                </button>
+                <button onclick="showSection('kuis')" class="nav-btn px-3 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-1.5 hover:bg-amber-100 text-slate-700">
+                    <span>📝</span> Kuis
+                </button>
+                <button onclick="showSection('hasil')" class="nav-btn px-3 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-1.5 hover:bg-amber-100 text-slate-700">
+                    <span>🏆</span> Hasil
+                </button>
+            </nav>
+        </div>
+
+        <!-- Global Progress Bar -->
+        <div class="w-full bg-gray-200 h-2">
+            <div id="overallProgressBar" class="bg-gradient-to-r from-brandGreen via-brandYellow to-brandRed h-2 transition-all duration-500 w-0"></div>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="max-w-6xl mx-auto p-4 md:p-6 w-full flex-grow">
+
+        <!-- ==================== 1. BERANDA ==================== -->
+        <section id="sec-beranda" class="space-y-6">
+            <!-- Hero Banner -->
+            <div class="bg-gradient-to-r from-teal-500 via-sky-500 to-indigo-600 rounded-3xl p-6 md:p-10 text-white shadow-xl relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-6 border-4 border-white">
+                <div class="space-y-4 max-w-xl text-center md:text-left z-10">
+                    <span class="bg-yellow-300 text-slate-900 text-xs md:text-sm px-3 py-1 rounded-full font-extrabold uppercase tracking-wider inline-block shadow">
+                        🌟 Media Edukasi Interaktif SD Kelas 2
+                    </span>
+                    <h2 class="text-3xl md:text-5xl font-black leading-tight drop-shadow-md">
+                        Mari Mengenal & Amalkan Pancasila!
+                    </h2>
+                    <p class="text-sky-100 text-base md:text-lg font-medium">
+                        Halo Sahabat Pancasila! Mari belajar makna 5 sila, mencoba simulasi kehidupan sehari-hari, dan bermain game seru untuk mengumpulkan Bintang & Lencana!
+                    </p>
+
+                    <!-- Student Name Input -->
+                    <div class="pt-2 flex flex-col sm:flex-row gap-3 items-center justify-center md:justify-start">
+                        <input type="text" id="playerNameInput" placeholder="Ketik Namamu di Sini..." 
+                               class="px-4 py-3 rounded-2xl text-slate-800 font-bold w-full sm:w-64 border-2 border-yellow-300 focus:outline-none focus:ring-4 focus:ring-yellow-200 text-center sm:text-left shadow-inner">
+                        <button onclick="savePlayerName()" class="w-full sm:w-auto bg-brandYellow hover:bg-amber-300 text-slate-900 font-black px-6 py-3 rounded-2xl shadow-lg transition-all transform hover:scale-105 active:scale-95 text-lg flex items-center justify-center gap-2 border-b-4 border-amber-500">
+                            🚀 Mulai Petualangan!
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Mascot Display -->
+                <div class="relative z-10 flex flex-col items-center">
+                    <div class="w-44 h-44 md:w-56 md:h-56 bg-white/20 backdrop-blur rounded-full p-4 flex items-center justify-center border-4 border-white/50 animate-float shadow-2xl">
+                        <div class="text-8xl md:text-9xl filter drop-shadow-lg">🦅</div>
+                    </div>
+                    <span class="mt-3 bg-white text-brandPurple font-extrabold px-4 py-1 rounded-xl text-sm shadow">
+                        "Garudaku - Teman Belajarmu"
+                    </span>
+                </div>
+            </div>
+
+            <!-- Quick Navigation Cards Grid -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <!-- Card 1: Materi -->
+                <div onclick="showSection('materi')" class="bg-white p-5 rounded-3xl shadow-md border-3 border-sky-200 hover:border-sky-400 transition-all cursor-pointer transform hover:-translate-y-1.5 hover:shadow-xl flex flex-col justify-between group">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="w-14 h-14 bg-sky-100 text-sky-600 rounded-2xl flex items-center justify-center text-3xl group-hover:scale-110 transition-transform">
+                            📚
+                        </div>
+                        <span class="text-xs font-extrabold text-sky-600 bg-sky-50 px-2.5 py-1 rounded-full border border-sky-200">Langkah 1</span>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-bold text-slate-800 mb-1">Materi Lambang</h3>
+                        <p class="text-slate-500 text-sm">Pelajari arti 5 sila dan contoh perbuatannya.</p>
+                    </div>
+                </div>
+
+                <!-- Card 2: Simulasi -->
+                <div onclick="showSection('simulasi')" class="bg-white p-5 rounded-3xl shadow-md border-3 border-emerald-200 hover:border-emerald-400 transition-all cursor-pointer transform hover:-translate-y-1.5 hover:shadow-xl flex flex-col justify-between group">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="w-14 h-14 bg-emerald-100 text-emerald-600 rounded-2xl flex items-center justify-center text-3xl group-hover:scale-110 transition-transform">
+                            🔬
+                        </div>
+                        <span class="text-xs font-extrabold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">Langkah 2</span>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-bold text-slate-800 mb-1">Lab Sebab-Akibat</h3>
+                        <p class="text-slate-500 text-sm">Ubah pilihan sikap & lihat apa yang terjadi!</p>
+                    </div>
+                </div>
+
+                <!-- Card 3: Permainan -->
+                <div onclick="showSection('permainan')" class="bg-white p-5 rounded-3xl shadow-md border-3 border-amber-200 hover:border-amber-400 transition-all cursor-pointer transform hover:-translate-y-1.5 hover:shadow-xl flex flex-col justify-between group">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="w-14 h-14 bg-amber-100 text-amber-600 rounded-2xl flex items-center justify-center text-3xl group-hover:scale-110 transition-transform">
+                            🎮
+                        </div>
+                        <span class="text-xs font-extrabold text-amber-600 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-200">Langkah 3</span>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-bold text-slate-800 mb-1">Game Seru</h3>
+                        <p class="text-slate-500 text-sm">Buka Kotak Kejutan & Pasangkan Gambar!</p>
+                    </div>
+                </div>
+
+                <!-- Card 4: Kuis -->
+                <div onclick="showSection('kuis')" class="bg-white p-5 rounded-3xl shadow-md border-3 border-rose-200 hover:border-rose-400 transition-all cursor-pointer transform hover:-translate-y-1.5 hover:shadow-xl flex flex-col justify-between group">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="w-14 h-14 bg-rose-100 text-rose-600 rounded-2xl flex items-center justify-center text-3xl group-hover:scale-110 transition-transform">
+                            📝
+                        </div>
+                        <span class="text-xs font-extrabold text-rose-600 bg-rose-50 px-2.5 py-1 rounded-full border border-rose-200">Langkah 4</span>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-bold text-slate-800 mb-1">Uji Pemahaman</h3>
+                        <p class="text-slate-500 text-sm">Jawab soal 3 tingkat (Mudah, Sedang, Menantang).</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== 2. MATERI ==================== -->
+        <section id="sec-materi" class="hidden space-y-6">
+            <div class="bg-white p-6 rounded-3xl shadow-md border-2 border-slate-200">
+                <div class="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6">
+                    <div>
+                        <span class="text-xs font-bold text-brandBlue uppercase tracking-wider">Modul Pembelajaran</span>
+                        <h2 class="text-2xl md:text-3xl font-extrabold text-slate-800">📚 Makna & Filosofi 5 Sila Pancasila</h2>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="speakText('Materi Pancasila Memiliki 5 Sila. Klik setiap lambang sila untuk mempelajari makna dan contoh perbuatannya.')" class="bg-amber-100 hover:bg-amber-200 text-amber-800 px-3 py-2 rounded-2xl text-sm font-bold flex items-center gap-2 shadow-sm">
+                            🔊 Dengarkan Suara
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Sila Tabs -->
+                <div class="grid grid-cols-5 gap-2 md:gap-3 mb-6">
+                    <button onclick="selectSilaMateri(1)" id="materi-tab-1" class="sila-tab-btn p-2 md:p-3 rounded-2xl border-2 border-yellow-400 bg-yellow-100 font-bold text-xs md:text-sm text-slate-800 flex flex-col items-center gap-1 transition-all">
+                        <span class="text-2xl md:text-3xl">⭐️</span>
+                        <span>Sila 1</span>
+                    </button>
+                    <button onclick="selectSilaMateri(2)" id="materi-tab-2" class="sila-tab-btn p-2 md:p-3 rounded-2xl border-2 border-gray-200 bg-gray-50 font-bold text-xs md:text-sm text-slate-600 flex flex-col items-center gap-1 transition-all">
+                        <span class="text-2xl md:text-3xl">🔗</span>
+                        <span>Sila 2</span>
+                    </button>
+                    <button onclick="selectSilaMateri(3)" id="materi-tab-3" class="sila-tab-btn p-2 md:p-3 rounded-2xl border-2 border-gray-200 bg-gray-50 font-bold text-xs md:text-sm text-slate-600 flex flex-col items-center gap-1 transition-all">
+                        <span class="text-2xl md:text-3xl">🌳</span>
+                        <span>Sila 3</span>
+                    </button>
+                    <button onclick="selectSilaMateri(4)" id="materi-tab-4" class="sila-tab-btn p-2 md:p-3 rounded-2xl border-2 border-gray-200 bg-gray-50 font-bold text-xs md:text-sm text-slate-600 flex flex-col items-center gap-1 transition-all">
+                        <span class="text-2xl md:text-3xl">🐂</span>
+                        <span>Sila 4</span>
+                    </button>
+                    <button onclick="selectSilaMateri(5)" id="materi-tab-5" class="sila-tab-btn p-2 md:p-3 rounded-2xl border-2 border-gray-200 bg-gray-50 font-bold text-xs md:text-sm text-slate-600 flex flex-col items-center gap-1 transition-all">
+                        <span class="text-2xl md:text-3xl">🌾</span>
+                        <span>Sila 5</span>
+                    </button>
+                </div>
+
+                <!-- Sila Content Card Display -->
+                <div id="materiContentCard" class="bg-amber-50/70 border-3 border-amber-200 rounded-3xl p-6 md:p-8 space-y-6">
+                    <!-- Dynamic content will be injected via JavaScript -->
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== 3. SIMULASI SEBAB-AKIBAT ==================== -->
+        <section id="sec-simulasi" class="hidden space-y-6">
+            <div class="bg-white p-6 rounded-3xl shadow-md border-2 border-slate-200 space-y-6">
+                <div>
+                    <span class="bg-emerald-100 text-emerald-800 text-xs font-black px-3 py-1 rounded-full uppercase">Laboratorium Perilaku</span>
+                    <h2 class="text-2xl md:text-3xl font-extrabold text-slate-800 mt-1">🔬 Simulasi Sebab-Akibat: Desa Pancasila Harmoni</h2>
+                    <p class="text-slate-600 text-sm md:text-base">Ubah pilihan sikap di bawah ini dan perhatikan perubahan suasana kehidupan di lingkungan sekitar!</p>
+                </div>
+
+                <!-- Simulation Controls Container -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Switches Column -->
+                    <div class="space-y-4 bg-slate-50 p-5 rounded-2xl border border-slate-200">
+                        <h3 class="font-bold text-lg text-slate-800 border-b pb-2 flex items-center gap-2">
+                            <span>🎛️</span> Pilihan Perilaku Siswa
+                        </h3>
+
+                        <!-- Toggle 1: Sila 1 / Sila 2 Toleransi & Menolong -->
+                        <div class="flex items-center justify-between p-3 bg-white rounded-xl shadow-sm border border-slate-200">
+                            <div>
+                                <div class="font-bold text-sm text-slate-800">Menolong Teman & Saling Menyapa</div>
+                                <div class="text-xs text-slate-500">Nilai Sila ke-2 (Kemanusiaan)</div>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="simToggle1" onchange="updateSimulation()" class="sr-only peer" checked>
+                                <div class="w-11 h-6 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+                            </label>
+                        </div>
+
+                        <!-- Toggle 2: Sila 3 Kebersamaan -->
+                        <div class="flex items-center justify-between p-3 bg-white rounded-xl shadow-sm border border-slate-200">
+                            <div>
+                                <div class="font-bold text-sm text-slate-800">Bekerja Sama & Tidak Musuhan</div>
+                                <div class="text-xs text-slate-500">Nilai Sila ke-3 (Persatuan)</div>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="simToggle2" onchange="updateSimulation()" class="sr-only peer" checked>
+                                <div class="w-11 h-6 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+                            </label>
+                        </div>
+
+                        <!-- Toggle 3: Sila 4 Musyawarah -->
+                        <div class="flex items-center justify-between p-3 bg-white rounded-xl shadow-sm border border-slate-200">
+                            <div>
+                                <div class="font-bold text-sm text-slate-800">Musyawarah saat Memilih Bermain</div>
+                                <div class="text-xs text-slate-500">Nilai Sila ke-4 (Kerakyatan)</div>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="simToggle3" onchange="updateSimulation()" class="sr-only peer" checked>
+                                <div class="w-11 h-6 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+                            </label>
+                        </div>
+
+                        <!-- Toggle 4: Sila 5 Keadilan / Berbagi -->
+                        <div class="flex items-center justify-between p-3 bg-white rounded-xl shadow-sm border border-slate-200">
+                            <div>
+                                <div class="font-bold text-sm text-slate-800">Berbagi Makanan Secara Adil</div>
+                                <div class="text-xs text-slate-500">Nilai Sila ke-5 (Keadilan Sosial)</div>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="simToggle4" onchange="updateSimulation()" class="sr-only peer" checked>
+                                <div class="w-11 h-6 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Simulation Result Display Panel -->
+                    <div id="simResultPanel" class="bg-gradient-to-b from-sky-100 to-blue-50 p-6 rounded-2xl border-2 border-sky-300 flex flex-col justify-between space-y-4 text-center">
+                        <div>
+                            <span class="text-xs font-black text-sky-700 bg-white px-3 py-1 rounded-full shadow-sm">Kondisi Lingkungan Sekitar</span>
+                            <div id="simMeterScore" class="text-4xl font-black text-emerald-600 my-2">100% Harmonis</div>
+                            <div class="w-full bg-gray-200 h-4 rounded-full overflow-hidden border border-slate-300 shadow-inner">
+                                <div id="simBar" class="bg-emerald-500 h-full transition-all duration-500" style="width: 100%;"></div>
+                            </div>
+                        </div>
+
+                        <!-- Animated Scene Illustration -->
+                        <div id="simVisualScene" class="p-6 bg-white rounded-2xl border-2 border-sky-200 shadow-sm text-6xl flex justify-center items-center gap-4 animate-pulse">
+                            🌞 🏡 👧🏽🤝👦🏻 🌸
+                        </div>
+
+                        <!-- Explanation Text -->
+                        <div id="simExplanationText" class="text-sm font-semibold text-slate-700 bg-white/80 p-4 rounded-xl border border-sky-200 text-left">
+                            ✨ Luar biasa! Ketika semua nilai Pancasila diterapkan, suasana menjadi rukun, damai, dan semua teman merasa gembira!
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== 4. PERMAINAN ==================== -->
+        <section id="sec-permainan" class="hidden space-y-6">
+            <div class="bg-white p-6 rounded-3xl shadow-md border-2 border-slate-200 space-y-6">
+                <!-- Game Tabs -->
+                <div class="flex flex-col sm:flex-row items-center justify-between border-b pb-4 gap-4">
+                    <div>
+                        <span class="text-xs font-bold text-amber-600 uppercase tracking-wider">Pusat Bermain</span>
+                        <h2 class="text-2xl md:text-3xl font-extrabold text-slate-800">🎮 Permainan Pancasila Interaktif</h2>
+                    </div>
+
+                    <div class="flex bg-slate-100 p-1.5 rounded-2xl border border-slate-200 w-full sm:w-auto">
+                        <button onclick="switchSubGame('openbox')" id="btnTabOpenBox" class="flex-1 sm:flex-none px-4 py-2 rounded-xl text-xs md:text-sm font-bold transition-all bg-white text-slate-800 shadow">
+                            📦 Open the Box
+                        </button>
+                        <button onclick="switchSubGame('dragdrop')" id="btnTabDragDrop" class="flex-1 sm:flex-none px-4 py-2 rounded-xl text-xs md:text-sm font-bold transition-all text-slate-600 hover:text-slate-900">
+                            🧩 Pasangkan Gambar
+                        </button>
+                    </div>
+                </div>
+
+                <!-- SUB GAME 1: OPEN THE BOX -->
+                <div id="subGameOpenBox" class="space-y-6">
+                    <div class="bg-amber-50 p-4 rounded-2xl border border-amber-200 flex items-center justify-between flex-wrap gap-2">
+                        <p class="text-sm text-amber-900 font-semibold">
+                            🎁 **Petunjuk:** Klik kotak misteri di bawah untuk membukanya! Temukan perbuatannya dan tebak lambang Pancasila yang cocok.
+                        </p>
+                        <button onclick="resetOpenBoxGame()" class="text-xs bg-amber-200 hover:bg-amber-300 font-bold px-3 py-1.5 rounded-xl text-amber-900">
+                            🔄 Ulangi Game
+                        </button>
+                    </div>
+
+                    <!-- 5 Mystery Boxes Container -->
+                    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+                        <!-- Box 1 -->
+                        <div onclick="openMysteryBox(1)" id="mysteryCard1" class="perspective-1000 h-48 cursor-pointer group">
+                            <div id="cardInner1" class="transform-style-3d relative w-full h-full rounded-2xl shadow-lg border-4 border-amber-400 bg-gradient-to-br from-amber-300 to-amber-500 flex flex-col items-center justify-center text-white font-bold p-3 transition-transform duration-500">
+                                <div class="text-5xl mb-2 group-hover:scale-110 transition-transform">🎁</div>
+                                <span class="text-lg font-black">Kotak 1</span>
+                                <span class="text-xs bg-white/30 px-2 py-0.5 rounded-full mt-1">Klik Me!</span>
+                            </div>
+                        </div>
+                        <!-- Box 2 -->
+                        <div onclick="openMysteryBox(2)" id="mysteryCard2" class="perspective-1000 h-48 cursor-pointer group">
+                            <div id="cardInner2" class="transform-style-3d relative w-full h-full rounded-2xl shadow-lg border-4 border-sky-400 bg-gradient-to-br from-sky-300 to-sky-500 flex flex-col items-center justify-center text-white font-bold p-3 transition-transform duration-500">
+                                <div class="text-5xl mb-2 group-hover:scale-110 transition-transform">🎁</div>
+                                <span class="text-lg font-black">Kotak 2</span>
+                                <span class="text-xs bg-white/30 px-2 py-0.5 rounded-full mt-1">Klik Me!</span>
+                            </div>
+                        </div>
+                        <!-- Box 3 -->
+                        <div onclick="openMysteryBox(3)" id="mysteryCard3" class="perspective-1000 h-48 cursor-pointer group">
+                            <div id="cardInner3" class="transform-style-3d relative w-full h-full rounded-2xl shadow-lg border-4 border-emerald-400 bg-gradient-to-br from-emerald-300 to-emerald-500 flex flex-col items-center justify-center text-white font-bold p-3 transition-transform duration-500">
+                                <div class="text-5xl mb-2 group-hover:scale-110 transition-transform">🎁</div>
+                                <span class="text-lg font-black">Kotak 3</span>
+                                <span class="text-xs bg-white/30 px-2 py-0.5 rounded-full mt-1">Klik Me!</span>
+                            </div>
+                        </div>
+                        <!-- Box 4 -->
+                        <div onclick="openMysteryBox(4)" id="mysteryCard4" class="perspective-1000 h-48 cursor-pointer group">
+                            <div id="cardInner4" class="transform-style-3d relative w-full h-full rounded-2xl shadow-lg border-4 border-rose-400 bg-gradient-to-br from-rose-300 to-rose-500 flex flex-col items-center justify-center text-white font-bold p-3 transition-transform duration-500">
+                                <div class="text-5xl mb-2 group-hover:scale-110 transition-transform">🎁</div>
+                                <span class="text-lg font-black">Kotak 4</span>
+                                <span class="text-xs bg-white/30 px-2 py-0.5 rounded-full mt-1">Klik Me!</span>
+                            </div>
+                        </div>
+                        <!-- Box 5 -->
+                        <div onclick="openMysteryBox(5)" id="mysteryCard5" class="perspective-1000 h-48 cursor-pointer group col-span-2 sm:col-span-1">
+                            <div id="cardInner5" class="transform-style-3d relative w-full h-full rounded-2xl shadow-lg border-4 border-purple-400 bg-gradient-to-br from-purple-300 to-purple-500 flex flex-col items-center justify-center text-white font-bold p-3 transition-transform duration-500">
+                                <div class="text-5xl mb-2 group-hover:scale-110 transition-transform">🎁</div>
+                                <span class="text-lg font-black">Kotak 5</span>
+                                <span class="text-xs bg-white/30 px-2 py-0.5 rounded-full mt-1">Klik Me!</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Open Box Modal Question Popup -->
+                    <div id="boxModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                        <div class="bg-white rounded-3xl p-6 max-w-lg w-full border-4 border-brandYellow shadow-2xl space-y-4 text-center animate-bounce-short">
+                            <div id="boxModalHeader" class="text-xs font-black text-brandBlue uppercase bg-sky-100 px-3 py-1 rounded-full inline-block">
+                                Kotak Terbuka!
+                            </div>
+                            <h3 id="boxModalQuestion" class="text-xl font-bold text-slate-800">
+                                "Siti sedang berdoa sebelum makan siang bersama keluarganya."
+                            </h3>
+                            <p class="text-sm text-slate-500 font-semibold">
+                                Perbuatan di atas sesuai dengan lambang Pancasila yang mana?
+                            </p>
+
+                            <!-- Options Grid -->
+                            <div id="boxModalOptions" class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2">
+                                <!-- Options dynamically injected -->
+                            </div>
+
+                            <div id="boxModalFeedback" class="hidden text-sm font-bold p-3 rounded-xl"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SUB GAME 2: DRAG AND DROP / TAP MATCHING -->
+                <div id="subGameDragDrop" class="hidden space-y-6">
+                    <div class="bg-sky-50 p-4 rounded-2xl border border-sky-200 flex items-center justify-between flex-wrap gap-2">
+                        <p class="text-sm text-sky-900 font-semibold">
+                            🧩 **Petunjuk:** Seret (drag) atau **klik/sentuh** lambang di sebelah kiri, lalu klik kotak perilaku yang cocok di sebelah kanan!
+                        </p>
+                        <button onclick="resetDragDropGame()" class="text-xs bg-sky-200 hover:bg-sky-300 font-bold px-3 py-1.5 rounded-xl text-sky-900">
+                            🔄 Ulangi Permainan
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Left Source: Draggable/Clickable Symbols -->
+                        <div class="space-y-3 bg-slate-50 p-4 rounded-2xl border border-slate-200">
+                            <h3 class="font-bold text-slate-700 text-sm flex items-center gap-2">
+                                <span>1️⃣</span> Pilih Lambang Sila:
+                            </h3>
+                            <div id="dragItemsContainer" class="space-y-2">
+                                <!-- Generated by JS -->
+                            </div>
+                        </div>
+
+                        <!-- Right Destination: Drop Slots -->
+                        <div class="space-y-3 bg-slate-50 p-4 rounded-2xl border border-slate-200">
+                            <h3 class="font-bold text-slate-700 text-sm flex items-center gap-2">
+                                <span>2️⃣</span> Pasangkan dengan Perilaku:
+                            </h3>
+                            <div id="dropTargetsContainer" class="space-y-2">
+                                <!-- Generated by JS -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== 5. KUIS ==================== -->
+        <section id="sec-kuis" class="hidden space-y-6">
+            <div class="bg-white p-6 rounded-3xl shadow-md border-2 border-slate-200 space-y-6">
+                <!-- Quiz Header & Level Selector -->
+                <div class="flex flex-col sm:flex-row items-center justify-between gap-4 border-b pb-4">
+                    <div>
+                        <span class="text-xs font-bold text-rose-600 uppercase tracking-wider">Uji Pemahaman</span>
+                        <h2 class="text-2xl md:text-3xl font-extrabold text-slate-800">📝 Kuis Interaktif Pancasila</h2>
+                    </div>
+
+                    <!-- Level Badge Buttons -->
+                    <div class="flex gap-2">
+                        <button onclick="switchQuizLevel('easy')" id="btnLvlEasy" class="px-3 py-1.5 rounded-xl text-xs font-extrabold border-2 border-green-500 bg-green-500 text-white shadow">
+                            🟢 Easy (Mudah)
+                        </button>
+                        <button onclick="switchQuizLevel('medium')" id="btnLvlMedium" class="px-3 py-1.5 rounded-xl text-xs font-extrabold border-2 border-amber-300 bg-amber-50 text-amber-800">
+                            🟡 Medium (Sedang)
+                        </button>
+                        <button onclick="switchQuizLevel('hard')" id="btnLvlHard" class="px-3 py-1.5 rounded-xl text-xs font-extrabold border-2 border-rose-300 bg-rose-50 text-rose-800">
+                            🔴 Hard (Menantang)
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Quiz Progress Bar & Tracker -->
+                <div class="flex items-center justify-between text-xs font-extrabold text-slate-500">
+                    <span id="quizQuestionTracker">Soal 1 dari 6</span>
+                    <span id="quizScoreTracker">Skor Kuis: 0</span>
+                </div>
+                <div class="w-full bg-slate-100 h-3 rounded-full overflow-hidden border border-slate-200">
+                    <div id="quizProgressBar" class="bg-brandRed h-full transition-all duration-300 w-1/6"></div>
+                </div>
+
+                <!-- Active Question Box -->
+                <div class="bg-amber-50/60 p-6 rounded-3xl border-2 border-amber-200 space-y-4">
+                    <div class="flex items-start gap-3">
+                        <div class="w-10 h-10 bg-brandYellow text-slate-900 rounded-2xl flex items-center justify-center font-extrabold text-lg flex-shrink-0 shadow-sm">
+                            ❓
+                        </div>
+                        <h3 id="quizQuestionText" class="text-lg md:text-xl font-bold text-slate-800 pt-1">
+                            Loading pertanyaan...
+                        </h3>
+                    </div>
+
+                    <!-- Multiple Choice Options -->
+                    <div id="quizOptionsContainer" class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                        <!-- Generated via JS -->
+                    </div>
+
+                    <!-- Explanation & Feedback Alert Box -->
+                    <div id="quizFeedbackBox" class="hidden p-4 rounded-2xl text-sm font-semibold border-2 transition-all">
+                        <!-- Injected via JS -->
+                    </div>
+
+                    <!-- Navigation Next/Retry Buttons -->
+                    <div class="flex justify-between items-center pt-2">
+                        <button onclick="retryCurrentQuestion()" id="btnRetryQuiz" class="hidden bg-slate-200 hover:bg-slate-300 text-slate-700 px-4 py-2 rounded-xl text-xs font-extrabold flex items-center gap-1.5">
+                            🔄 Coba Lagi
+                        </button>
+                        <button onclick="nextQuizQuestion()" id="btnNextQuiz" class="ml-auto bg-brandGreen hover:bg-emerald-500 text-white font-extrabold px-6 py-2.5 rounded-xl text-sm shadow-md transition-transform transform active:scale-95 flex items-center gap-2">
+                            <span>Lanjut Soal</span> ➔
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== 6. HASIL & LENCANA ==================== -->
+        <section id="sec-hasil" class="hidden space-y-6">
+            <div class="bg-white p-6 md:p-10 rounded-3xl shadow-xl border-4 border-brandYellow text-center space-y-6 relative overflow-hidden">
+                <!-- Confetti graphic backdrop header -->
+                <div class="space-y-2">
+                    <span class="bg-yellow-100 text-amber-800 text-xs font-black px-4 py-1 rounded-full uppercase border border-yellow-300">
+                        🏆 Rapor Prestasi Pembelajaran
+                    </span>
+                    <h2 class="text-3xl md:text-4xl font-black text-brandPurple">
+                        Selamat, <span id="playerNameDisplay" class="text-brandBlue">Sahabat Cilik</span>!
+                    </h2>
+                    <p id="motivationMsg" class="text-slate-600 font-bold max-w-lg mx-auto text-sm md:text-base">
+                        Kamu telah menyelesaikan aktivitas belajar dan menunjukkan sikap anak hebat yang mengamalkan Pancasila!
+                    </p>
+                </div>
+
+                <!-- Big Score Highlight Card -->
+                <div class="max-w-md mx-auto bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 p-6 rounded-3xl shadow-lg border-4 border-white text-slate-900 space-y-2 transform hover:scale-105 transition-transform">
+                    <div class="text-xs uppercase font-extrabold tracking-wider text-slate-800">Total Skor Akhir Kamu</div>
+                    <div id="finalScoreDisplay" class="text-6xl md:text-7xl font-black drop-shadow-sm">0</div>
+                    <div class="text-xs font-extrabold bg-white/40 px-3 py-1 rounded-full inline-block">
+                        ⭐⭐⭐⭐⭐ Bintang Garuda
+                    </div>
+                </div>
+
+                <!-- Unlocked Badges Section -->
+                <div class="space-y-3 pt-4 border-t">
+                    <h3 class="font-extrabold text-slate-800 text-lg">🎖️ Koleksi Lencana Pancasila Kamu</h3>
+                    <div class="grid grid-cols-2 sm:grid-cols-5 gap-3 max-w-3xl mx-auto">
+                        <!-- Badge 1 -->
+                        <div id="badge-card-1" class="p-3 rounded-2xl border-2 border-gray-200 bg-gray-50 opacity-50 flex flex-col items-center justify-center text-center transition-all">
+                            <span class="text-3xl mb-1">⭐️</span>
+                            <span class="text-xs font-bold text-slate-700">Sahabat Religius</span>
+                            <span class="text-[10px] text-slate-500 font-medium">Sila 1</span>
+                        </div>
+                        <!-- Badge 2 -->
+                        <div id="badge-card-2" class="p-3 rounded-2xl border-2 border-gray-200 bg-gray-50 opacity-50 flex flex-col items-center justify-center text-center transition-all">
+                            <span class="text-3xl mb-1">🔗</span>
+                            <span class="text-xs font-bold text-slate-700">Penyayang Teman</span>
+                            <span class="text-[10px] text-slate-500 font-medium">Sila 2</span>
+                        </div>
+                        <!-- Badge 3 -->
+                        <div id="badge-card-3" class="p-3 rounded-2xl border-2 border-gray-200 bg-gray-50 opacity-50 flex flex-col items-center justify-center text-center transition-all">
+                            <span class="text-3xl mb-1">🌳</span>
+                            <span class="text-xs font-bold text-slate-700">Penjaga Rukun</span>
+                            <span class="text-[10px] text-slate-500 font-medium">Sila 3</span>
+                        </div>
+                        <!-- Badge 4 -->
+                        <div id="badge-card-4" class="p-3 rounded-2xl border-2 border-gray-200 bg-gray-50 opacity-50 flex flex-col items-center justify-center text-center transition-all">
+                            <span class="text-3xl mb-1">🐂</span>
+                            <span class="text-xs font-bold text-slate-700">Raja Musyawarah</span>
+                            <span class="text-[10px] text-slate-500 font-medium">Sila 4</span>
+                        </div>
+                        <!-- Badge 5 -->
+                        <div id="badge-card-5" class="p-3 rounded-2xl border-2 border-gray-200 bg-gray-50 opacity-50 flex flex-col items-center justify-center text-center font-bold font-xs col-span-2 sm:col-span-1 transition-all">
+                            <span class="text-3xl mb-1">🌾</span>
+                            <span class="text-xs font-bold text-slate-700">Bintang Keadilan</span>
+                            <span class="text-[10px] text-slate-500 font-medium">Sila 5</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex flex-wrap items-center justify-center gap-3 pt-4">
+                    <button onclick="triggerConfetti()" class="bg-brandYellow hover:bg-amber-400 text-slate-900 font-black px-5 py-2.5 rounded-2xl shadow-md transition-all flex items-center gap-2 border-b-4 border-amber-500">
+                        🎉 Rayakan Victory!
+                    </button>
+                    <button onclick="restartAllProgress()" class="bg-slate-200 hover:bg-slate-300 text-slate-800 font-extrabold px-5 py-2.5 rounded-2xl shadow-sm transition-all flex items-center gap-2">
+                        🔄 Main Lagi Dari Awal
+                    </button>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-500 font-semibold mt-6">
+        <p>Media Pembelajaran Interaktif Pancasila • Kelas 2 Sekolah Dasar (SD)</p>
+        <p class="text-[11px] text-slate-400 mt-0.5">Didesain dengan Kurikulum Merdeka • Ramah Anak & Responsif</p>
+    </footer>
+
+    <script>
+        /* ==================== APP STATE ==================== */
+        const gameState = {
+            playerName: "Sahabat Cilik",
+            score: 0,
+            unlockedBadges: new Set(),
+            currentSection: 'beranda',
+            
+            // Open Box game state
+            openBoxOpened: [false, false, false, false, false],
+            openBoxActiveIndex: null,
+
+            // Drag and Drop State
+            selectedDragId: null,
+            dragMatchedCount: 0,
+
+            // Quiz state
+            quizLevel: 'easy',
+            quizCurrentIndex: 0,
+            quizScore: 0,
+            quizAnswered: false
+        };
+
+        /* ==================== MATERI DATA ==================== */
+        const materiData = {
+            1: {
+                sila: "Sila Ke-1",
+                nama: "Ketuhanan Yang Maha Esa",
+                symbol: "⭐️",
+                symbolName: "Bintang Emas",
+                bgCard: "bg-amber-50 border-amber-300",
+                makna: "Makna Bintang Emas melambangkan bahwa bangsa Indonesia adalah bangsa yang beriman dan bertakwa kepada Tuhan Yang Maha Esa.",
+                contoh: [
+                    "Berdoa sebelum dan sesudah makan atau belajar.",
+                    "Hormat dan menghargai teman yang sedang beribadah.",
+                    "Jujur dan rajin bersyukur atas nikmat Tuhan."
+                ],
+                audioText: "Sila pertama dilambangkan dengan Bintang Emas. Maknanya kita harus beriman kepada Tuhan Yang Maha Esa dan saling menghormati antar umat beragama."
+            },
+            2: {
+                sila: "Sila Ke-2",
+                nama: "Kemanusiaan yang Adil dan Beradab",
+                symbol: "🔗",
+                symbolName: "Rantai Emas",
+                bgCard: "bg-sky-50 border-sky-300",
+                makna: "Rantai melambangkan hubungan antar manusia yang saling membutuhkan, bersatu, dan saling menyayangi.",
+                contoh: [
+                    "Menolong teman yang jatuh atau kesusahan.",
+                    "Tidak mengejek dan selalu bersikap sopan santun.",
+                    "Menyayangi sesama teman di sekolah dan rumah."
+                ],
+                audioText: "Sila kedua dilambangkan dengan Rantai Emas. Maknanya kita harus saling menyayangi, bersikap sopan, dan menolong teman yang kesusahan."
+            },
+            3: {
+                sila: "Sila Ke-3",
+                nama: "Persatuan Indonesia",
+                symbol: "🌳",
+                symbolName: "Pohon Beringin",
+                bgCard: "bg-emerald-50 border-emerald-300",
+                makna: "Pohon beringin yang kokoh melambangkan tempat berteduh dan persatuan seluruh rakyat Indonesia.",
+                contoh: [
+                    "Hidup rukun dan tidak suka bertengkar.",
+                    "Bekerja sama membersihkan kelas atau rumah.",
+                    "Cinta produk dan budaya Indonesia."
+                ],
+                audioText: "Sila ketiga dilambangkan dengan Pohon Beringin. Maknanya kita harus menjaga persatuan, hidup rukun, dan tidak suka bertengkar."
+            },
+            4: {
+                sila: "Sila Ke-4",
+                nama: "Kerakyatan yang Dipimpin oleh Hikmat Kebijaksanaan dalam Permusyawaratan/Perwakilan",
+                symbol: "🐂",
+                symbolName: "Kepala Banteng",
+                bgCard: "bg-rose-50 border-rose-300",
+                makna: "Banteng suka berkumpul, melambangkan musyawarah untuk berkumpul dan mengambil keputusan bersama secara adil.",
+                contoh: [
+                    "Bermusyawarah memilih ketua kelas.",
+                    "Tidak memaksakan kehendak sendiri kepada teman.",
+                    "Mendengarkan pendapat orang lain saat berdiskusi."
+                ],
+                audioText: "Sila keempat dilambangkan dengan Kepala Banteng. Maknanya kita bermusyawarah dan berdiskusi secara damai untuk mengambil keputusan bersama."
+            },
+            5: {
+                sila: "Sila Ke-5",
+                nama: "Keadilan Sosial bagi Seluruh Rakyat Indonesia",
+                symbol: "🌾",
+                symbolName: "Padi dan Kapas",
+                bgCard: "bg-yellow-50 border-yellow-300",
+                makna: "Padi melambangkan pangan (makanan) dan kapas melambangkan sandang (pakaian). Ini menunjukkan kemakmuran dan keadilan.",
+                contoh: [
+                    "Bersikap adil dan tidak pilih-pilih teman.",
+                    "Suka berbagi makanan atau alat tulis secara adil.",
+                    "Suka menabung dan hemat (tidak boros)."
+                ],
+                audioText: "Sila kelima dilambangkan dengan Padi dan Kapas. Maknanya bersikap adil kepada semua orang, tidak pilih kasih, dan suka berbagi."
+            }
+        };
+
+        /* ==================== GAME 1: OPEN THE BOX DATA ==================== */
+        const openBoxQuestions = [
+            {
+                id: 1,
+                perilaku: "Edo selalu berdoa dengan khusyuk sebelum dan sesudah makan.",
+                correctSila: 1,
+                options: [
+                    { sila: 1, label: "Sila 1 (Bintang ⭐️)" },
+                    { sila: 2, label: "Sila 2 (Rantai 🔗)" },
+                    { sila: 3, label: "Sila 3 (Beringin 🌳)" }
+                ],
+                penjelasan: "Berdoa sebelum makan adalah bentuk rasa syukur kepada Tuhan (Sila 1)."
+            },
+            {
+                id: 2,
+                perilaku: "Lani membantu menyapu lantai kelas bersama teman-teman piket.",
+                correctSila: 3,
+                options: [
+                    { sila: 2, label: "Sila 2 (Rantai 🔗)" },
+                    { sila: 3, label: "Sila 3 (Beringin 🌳)" },
+                    { sila: 4, label: "Sila 4 (Banteng 🐂)" }
+                ],
+                penjelasan: "Bekerja sama menjaga kebersihan kelas mencerminkan persatuan (Sila 3)."
+            },
+            {
+                id: 3,
+                perilaku: "Miti membagikan rotinya secara adil kepada dua temannya.",
+                correctSila: 5,
+                options: [
+                    { sila: 1, label: "Sila 1 (Bintang ⭐️)" },
+                    { sila: 4, label: "Sila 4 (Banteng 🐂)" },
+                    { sila: 5, label: "Sila 5 (Padi Kapas 🌾)" }
+                ],
+                penjelasan: "Bersikap adil dan berbagi makanan sesuai dengan nilai Sila 5."
+            },
+            {
+                id: 4,
+                perilaku: "Siswa kelas 2 berdiskusi bersama untuk menentukan tujuan tempat wisata sekolah.",
+                correctSila: 4,
+                options: [
+                    { sila: 3, label: "Sila 3 (Beringin 🌳)" },
+                    { sila: 4, label: "Sila 4 (Banteng 🐂)" },
+                    { sila: 5, label: "Sila 5 (Padi Kapas 🌾)" }
+                ],
+                penjelasan: "Berdiskusi dan bermusyawarah mengambil keputusan adalah amalan Sila 4."
+            },
+            {
+                id: 5,
+                perilaku: "Udin segera mengobati dan menolong Budi yang terjatuh dari sepeda.",
+                correctSila: 2,
+                options: [
+                    { sila: 1, label: "Sila 1 (Bintang ⭐️)" },
+                    { sila: 2, label: "Sila 2 (Rantai 🔗)" },
+                    { sila: 4, label: "Sila 4 (Banteng 🐂)" }
+                ],
+                penjelasan: "Menolong teman yang kesusahan adalah bukti rasa kemanusiaan (Sila 2)."
+            }
+        ];
+
+        /* ==================== GAME 2: DRAG & DROP DATA ==================== */
+        const dragDropData = [
+            { id: 'sila1', symbol: '⭐️', name: 'Bintang Emas', text: 'Mengucapkan doa sebelum belajar', targetId: 'target1', matched: false },
+            { id: 'sila2', symbol: '🔗', name: 'Rantai Emas', text: 'Menolong teman yang terjatuh', targetId: 'target2', matched: false },
+            { id: 'sila3', symbol: '🌳', name: 'Pohon Beringin', text: 'Gotong royong membersihkan taman', targetId: 'target3', matched: false },
+            { id: 'sila4', symbol: '🐂', name: 'Kepala Banteng', text: 'Musyawarah memilih ketua kelas', targetId: 'target4', matched: false },
+            { id: 'sila5', symbol: '🌾', name: 'Padi & Kapas', text: 'Membagi tugas secara adil', targetId: 'target5', matched: false }
+        ];
+
+        /* ==================== QUIZ DATA (3 LEVELS) ==================== */
+        const quizQuestions = {
+            easy: [
+                {
+                    q: "Lambang dari Sila Pertama Pancasila adalah...",
+                    options: ["Bintang Emas", "Pohon Beringin", "Kepala Banteng", "Rantai Emas"],
+                    answer: 0,
+                    explain: "Sila Pertama dilambangkan oleh Bintang Emas ⭐️ (Ketuhanan Yang Maha Esa)."
+                },
+                {
+                    q: "Saat temannya sedang berdoa, sikap kita yang benar adalah...",
+                    options: ["Mengganggu", "Menghormati & tenang", "Bicara keras", "Tertawa"],
+                    answer: 1,
+                    explain: "Sila ke-1 mengajarkan kita untuk toleransi dan menghormati ibadah orang lain."
+                }
+            ],
+            medium: [
+                {
+                    q: "Gambar Rantai Emas melambangkan Sila ke-...",
+                    options: ["Sila ke-1", "Sila ke-2", "Sila ke-3", "Sila ke-4"],
+                    answer: 1,
+                    explain: "Rantai Emas adalah lambang Sila ke-2 (Kemanusiaan yang Adil dan Beradab)."
+                },
+                {
+                    q: "Contoh perbuatan yang sesuai dengan Sila ke-3 (Persatuan Indonesia) adalah...",
+                    options: ["Bertengkar dengan teman", "Pilih-pilih teman", "Rukun dan bekerja sama", "Egois"],
+                    answer: 2,
+                    explain: "Sila ke-3 mengajarkan persatuan dan kerukunan bersama."
+                }
+            ],
+            hard: [
+                {
+                    q: "Apabila ada perbedaan pendapat saat memilih permainan, sikap terbaik sesuai Sila ke-4 adalah...",
+                    options: ["Memaksa kehendak", "Bermusyawarah secara damai", "Marah dan pulang", "Menangis"],
+                    answer: 1,
+                    explain: "Sila ke-4 menekankan pentingnya musyawarah untuk mencapai mufakat."
+                },
+                {
+                    q: "Menabung dan tidak menghabiskan semua uang jajan merupakan pengamalan Sila ke-...",
+                    options: ["Sila ke-2", "Sila ke-3", "Sila ke-4", "Sila ke-5"],
+                    answer: 3,
+                    explain: "Sila ke-5 mengajarkan hidup hemat, tidak boros, dan bersikap adil."
+                }
+            ]
+        };
+
+        /* ==================== WEB AUDIO SYNTHESIZER ==================== */
+        function playSound(type) {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+
+                if (type === 'correct') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(523.25, ctx.currentTime); // C5
+                    osc.frequency.exponentialRampToValueAtTime(659.25, ctx.currentTime + 0.15); // E5
+                    osc.frequency.exponentialRampToValueAtTime(783.99, ctx.currentTime + 0.3); // G5
+                    gain.gain.setValueAtTime(0.3, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4);
+                    osc.start();
+                    osc.stop(ctx.currentTime + 0.4);
+                } else if (type === 'wrong') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(220, ctx.currentTime);
+                    osc.frequency.setValueAtTime(180, ctx.currentTime + 0.15);
+                    gain.gain.setValueAtTime(0.3, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.35);
+                    osc.start();
+                    osc.stop(ctx.currentTime + 0.35);
+                } else if (type === 'pop') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(400, ctx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(800, ctx.currentTime + 0.1);
+                    gain.gain.setValueAtTime(0.2, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.12);
+                    osc.start();
+                    osc.stop(ctx.currentTime + 0.12);
+                }
+            } catch (e) {
+                console.log('Audio error:', e);
+            }
+        }
+
+        /* ==================== SPEECH SYNTHESIS HELPER ==================== */
+        function speakText(text) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'id-ID';
+                utterance.rate = 0.9;
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        /* ==================== INITIALIZATION ==================== */
+        window.onload = function () {
+            selectSilaMateri(1);
+            updateSimulation();
+            initDragDropGame();
+            loadQuizQuestion();
+            updateGlobalProgress();
+        };
+
+        /* ==================== NAVIGATION LOGIC ==================== */
+        function showSection(sectionId) {
+            const sections = ['beranda', 'materi', 'simulasi', 'permainan', 'kuis', 'hasil'];
+            sections.forEach(sec => {
+                const el = document.getElementById(`sec-${sec}`);
+                if (el) el.classList.add('hidden');
+            });
+
+            const target = document.getElementById(`sec-${sectionId}`);
+            if (target) {
+                target.classList.remove('hidden');
+                gameState.currentSection = sectionId;
+            }
+
+            // Close mobile nav menu
+            document.getElementById('navMenu').classList.add('hidden');
+            playSound('pop');
+            updateGlobalProgress();
+        }
+
+        function toggleMobileMenu() {
+            const menu = document.getElementById('navMenu');
+            menu.classList.toggle('hidden');
+        }
+
+        function savePlayerName() {
+            const input = document.getElementById('playerNameInput').value.trim();
+            if (input) {
+                gameState.playerName = input;
+            }
+            document.getElementById('playerNameDisplay').innerText = gameState.playerName;
+            playSound('correct');
+            showSection('materi');
+        }
+
+        function addScore(points) {
+            gameState.score += points;
+            document.getElementById('globalScore').innerText = gameState.score;
+            document.getElementById('finalScoreDisplay').innerText = gameState.score;
+            updateGlobalProgress();
+        }
+
+        function unlockBadge(badgeId) {
+            if (!gameState.unlockedBadges.has(badgeId)) {
+                gameState.unlockedBadges.add(badgeId);
+                document.getElementById('badgeCount').innerText = gameState.unlockedBadges.size;
+                
+                const card = document.getElementById(`badge-card-${badgeId}`);
+                if (card) {
+                    card.classList.remove('opacity-50', 'bg-gray-50', 'border-gray-200');
+                    card.classList.add('bg-yellow-100', 'border-yellow-400', 'shadow-md', 'scale-105');
+                }
+                triggerConfetti();
+            }
+        }
+
+        function updateGlobalProgress() {
+            let progress = 10;
+            if (gameState.currentSection === 'materi') progress = 30;
+            if (gameState.currentSection === 'simulasi') progress = 50;
+            if (gameState.currentSection === 'permainan') progress = 70;
+            if (gameState.currentSection === 'kuis') progress = 90;
+            if (gameState.currentSection === 'hasil') progress = 100;
+
+            document.getElementById('overallProgressBar').style.width = `${progress}%`;
+        }
+
+        /* ==================== MATERI LOGIC ==================== */
+        function selectSilaMateri(silaNum) {
+            const data = materiData[silaNum];
+            
+            // Tab active styling
+            for (let i = 1; i <= 5; i++) {
+                const btn = document.getElementById(`materi-tab-${i}`);
+                if (i === silaNum) {
+                    btn.className = "sila-tab-btn p-2 md:p-3 rounded-2xl border-2 border-yellow-400 bg-yellow-100 font-bold text-xs md:text-sm text-slate-800 flex flex-col items-center gap-1 shadow transition-all scale-105";
+                } else {
+                    btn.className = "sila-tab-btn p-2 md:p-3 rounded-2xl border-2 border-gray-200 bg-gray-50 font-bold text-xs md:text-sm text-slate-600 flex flex-col items-center gap-1 transition-all opacity-80 hover:opacity-100";
+                }
+            }
+
+            // Render Card
+            const card = document.getElementById('materiContentCard');
+            card.className = `${data.bgCard} border-3 rounded-3xl p-6 md:p-8 space-y-6 transition-all`;
+            card.innerHTML = `
+                <div class="flex flex-col md:flex-row items-center gap-6">
+                    <div class="w-32 h-32 md:w-40 md:h-40 bg-white rounded-3xl border-4 border-yellow-300 shadow-md flex flex-col items-center justify-center text-center p-2 flex-shrink-0">
+                        <span class="text-6xl md:text-7xl mb-1">${data.symbol}</span>
+                        <span class="text-xs font-black text-slate-700">${data.symbolName}</span>
+                    </div>
+                    <div class="space-y-3 text-center md:text-left flex-grow">
+                        <span class="bg-yellow-300 text-slate-900 font-black px-3 py-1 rounded-full text-xs uppercase">${data.sila}</span>
+                        <h3 class="text-2xl md:text-3xl font-black text-slate-800">${data.nama}</h3>
+                        <p class="text-slate-700 text-sm md:text-base font-semibold leading-relaxed">${data.makna}</p>
+                        <button onclick="speakText('${data.audioText}')" class="bg-white hover:bg-slate-100 text-slate-800 border border-slate-300 font-bold px-4 py-2 rounded-xl text-xs inline-flex items-center gap-2 shadow-sm">
+                            🔊 Dengarkan Penjelasan Sila Ke-${silaNum}
+                        </button>
+                    </div>
+                </div>
+
+                <div class="bg-white/90 p-5 rounded-2xl border border-amber-200 space-y-3">
+                    <h4 class="font-extrabold text-slate-800 text-base flex items-center gap-2">
+                        <span>🌱</span> Contoh Sikap & Perbuatan Sehari-hari:
+                    </h4>
+                    <ul class="space-y-2 text-sm font-semibold text-slate-700">
+                        ${data.contoh.map(item => `
+                            <li class="flex items-start gap-2 bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                                <span class="text-emerald-500 font-bold">✓</span>
+                                <span>${item}</span>
+                            </li>
+                        `).join('')}
+                    </ul>
+                </div>
+            `;
+            playSound('pop');
+            unlockBadge(silaNum);
+        }
+
+        /* ==================== SIMULATION LOGIC ==================== */
+        function updateSimulation() {
+            const t1 = document.getElementById('simToggle1').checked;
+            const t2 = document.getElementById('simToggle2').checked;
+            const t3 = document.getElementById('simToggle3').checked;
+            const t4 = document.getElementById('simToggle4').checked;
+
+            let count = (t1 ? 1 : 0) + (t2 ? 1 : 0) + (t3 ? 1 : 0) + (t4 ? 1 : 0);
+            let scorePct = count * 25;
+
+            const meter = document.getElementById('simMeterScore');
+            const bar = document.getElementById('simBar');
+            const scene = document.getElementById('simVisualScene');
+            const exp = document.getElementById('simExplanationText');
+
+            bar.style.width = `${scorePct}%`;
+
+            if (scorePct === 100) {
+                meter.innerText = "100% Harmonis & Bahagia";
+                meter.className = "text-3xl md:text-4xl font-black text-emerald-600 my-2";
+                bar.className = "bg-emerald-500 h-full transition-all duration-500";
+                scene.innerHTML = "🌞 🏡 👧🏽🤝👦🏻 🌸 🎉";
+                exp.innerHTML = "✨ **Sebab-Akibat:** Semua nilai Pancasila dijalankan! Lingkungan menjadi rukun, damai, penuh kasih sayang, dan semua anak merasa bahagia.";
+            } else if (scorePct >= 50) {
+                meter.innerText = `${scorePct}% Cukup Harmonis`;
+                meter.className = "text-3xl md:text-4xl font-black text-amber-500 my-2";
+                bar.className = "bg-amber-400 h-full transition-all duration-500";
+                scene.innerHTML = "🌤️ 🏡 👦🏻 😐 👧🏽 🍃";
+                exp.innerHTML = "⚠️ **Sebab-Akibat:** Sebagian sikap Pancasila belum diterapkan. Masih ada sedikit perselisihan, ayo aktifkan semua tombol agar suasana kembali ceria!";
+            } else {
+                meter.innerText = `${scorePct}% Kurang Harmonis`;
+                meter.className = "text-3xl md:text-4xl font-black text-rose-600 my-2";
+                bar.className = "bg-rose-500 h-full transition-all duration-500";
+                scene.innerHTML = "🌧️ 🏠 👦🏻💔👧🏽 🍂";
+                exp.innerHTML = "❌ **Sebab-Akibat:** Banyak nilai Pancasila yang diabaikan! Akibatnya timbul pertengkaran, tidak adil, dan suasana kelas/rumah menjadi tidak nyaman.";
+            }
+            playSound('pop');
+        }
+
+        /* ==================== SUB GAMES MANAGEMENT ==================== */
+        function switchSubGame(gameType) {
+            const openBox = document.getElementById('subGameOpenBox');
+            const dragDrop = document.getElementById('subGameDragDrop');
+            const btnBox = document.getElementById('btnTabOpenBox');
+            const btnDrag = document.getElementById('btnTabDragDrop');
+
+            if (gameType === 'openbox') {
+                openBox.classList.remove('hidden');
+                dragDrop.classList.add('hidden');
+                btnBox.className = "flex-1 sm:flex-none px-4 py-2 rounded-xl text-xs md:text-sm font-bold transition-all bg-white text-slate-800 shadow";
+                btnDrag.className = "flex-1 sm:flex-none px-4 py-2 rounded-xl text-xs md:text-sm font-bold transition-all text-slate-600 hover:text-slate-900";
+            } else {
+                openBox.classList.add('hidden');
+                dragDrop.classList.remove('hidden');
+                btnDrag.className = "flex-1 sm:flex-none px-4 py-2 rounded-xl text-xs md:text-sm font-bold transition-all bg-white text-slate-800 shadow";
+                btnBox.className = "flex-1 sm:flex-none px-4 py-2 rounded-xl text-xs md:text-sm font-bold transition-all text-slate-600 hover:text-slate-900";
+            }
+            playSound('pop');
+        }
+
+        /* ==================== GAME 1: OPEN THE BOX LOGIC ==================== */
+        function openMysteryBox(boxNum) {
+            if (gameState.openBoxOpened[boxNum - 1]) {
+                return; // Already opened
+            }
+            gameState.openBoxActiveIndex = boxNum - 1;
+            const qData = openBoxQuestions[boxNum - 1];
+
+            document.getElementById('boxModalHeader').innerText = `Kotak Kejutan ${boxNum}`;
+            document.getElementById('boxModalQuestion').innerText = `"${qData.perilaku}"`;
+            
+            const optionsContainer = document.getElementById('boxModalOptions');
+            optionsContainer.innerHTML = qData.options.map(opt => `
+                <button onclick="checkOpenBoxAnswer(${opt.sila})" class="p-3 bg-amber-100 hover:bg-amber-200 border-2 border-amber-300 text-slate-800 font-bold rounded-2xl transition-all active:scale-95 text-sm">
+                    ${opt.label}
+                </button>
+            `).join('');
+
+            document.getElementById('boxModalFeedback').classList.add('hidden');
+            document.getElementById('boxModal').classList.remove('hidden');
+            playSound('pop');
+        }
+
+        function checkOpenBoxAnswer(selectedSila) {
+            const idx = gameState.openBoxActiveIndex;
+            const qData = openBoxQuestions[idx];
+            const feedbackEl = document.getElementById('boxModalFeedback');
+
+            if (selectedSila === qData.correctSila) {
+                playSound('correct');
+                feedbackEl.className = "text-sm font-bold p-3 rounded-xl bg-emerald-100 text-emerald-800 border border-emerald-300 block";
+                feedbackEl.innerHTML = `🎉 **BENAR!** ${qData.penjelasan}`;
+                
+                gameState.openBoxOpened[idx] = true;
+                addScore(20);
+
+                // Update Box Card Visual
+                const inner = document.getElementById(`cardInner${idx + 1}`);
+                inner.className = "transform-style-3d relative w-full h-full rounded-2xl shadow border-4 border-emerald-500 bg-emerald-100 text-emerald-900 font-bold p-3 flex flex-col items-center justify-center text-center";
+                inner.innerHTML = `
+                    <div class="text-4xl mb-1">✅</div>
+                    <span class="text-xs font-black">Selesai!</span>
+                    <span class="text-[10px] font-semibold text-emerald-700">Sila Ke-${qData.correctSila}</span>
+                `;
+
+                setTimeout(() => {
+                    document.getElementById('boxModal').classList.add('hidden');
+                }, 1800);
+            } else {
+                playSound('wrong');
+                feedbackEl.className = "text-sm font-bold p-3 rounded-xl bg-rose-100 text-rose-800 border border-rose-300 block";
+                feedbackEl.innerHTML = "❌ **Kurang Tepat!** Coba ingat kembali makna lambang Pancasila!";
+            }
+        }
+
+        function resetOpenBoxGame() {
+            gameState.openBoxOpened = [false, false, false, false, false];
+            const colors = ['amber', 'sky', 'emerald', 'rose', 'purple'];
+            for (let i = 1; i <= 5; i++) {
+                const inner = document.getElementById(`cardInner${i}`);
+                const c = colors[i - 1];
+                inner.className = `transform-style-3d relative w-full h-full rounded-2xl shadow-lg border-4 border-${c}-400 bg-gradient-to-br from-${c}-300 to-${c}-500 flex flex-col items-center justify-center text-white font-bold p-3 transition-transform duration-500`;
+                inner.innerHTML = `
+                    <div class="text-5xl mb-2 group-hover:scale-110 transition-transform">🎁</div>
+                    <span class="text-lg font-black">Kotak ${i}</span>
+                    <span class="text-xs bg-white/30 px-2 py-0.5 rounded-full mt-1">Klik Me!</span>
+                `;
+            }
+            playSound('pop');
+        }
+
+        /* ==================== GAME 2: DRAG AND DROP LOGIC ==================== */
+        function initDragDropGame() {
+            const dragContainer = document.getElementById('dragItemsContainer');
+            const dropContainer = document.getElementById('dropTargetsContainer');
+
+            dragContainer.innerHTML = '';
+            dropContainer.innerHTML = '';
+
+            // Render Draggable/Clickable items
+            dragDropData.forEach(item => {
+                const el = document.createElement('div');
+                el.id = `drag-${item.id}`;
+                el.className = `draggable-item bg-white border-2 border-amber-300 p-3 rounded-2xl shadow-sm flex items-center justify-between font-bold text-sm text-slate-800 transition-all ${item.matched ? 'opacity-40 cursor-not-allowed' : 'hover:scale-102 cursor-pointer'}`;
+                el.draggable = !item.matched;
+                el.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <span class="text-3xl">${item.symbol}</span>
+                        <span>${item.name}</span>
+                    </div>
+                    <span class="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded-lg">Pilih</span>
+                `;
+
+                // Drag Events
+                el.ondragstart = (e) => {
+                    e.dataTransfer.setData('text/plain', item.id);
+                    gameState.selectedDragId = item.id;
+                };
+
+                // Fallback Click Event
+                el.onclick = () => {
+                    if (item.matched) return;
+                    document.querySelectorAll('.draggable-item').forEach(i => i.classList.remove('selected-item'));
+                    el.classList.add('selected-item');
+                    gameState.selectedDragId = item.id;
+                    playSound('pop');
+                };
+
+                dragContainer.appendChild(el);
+            });
+
+            // Render Target Slots
+            dragDropData.forEach(item => {
+                const slot = document.createElement('div');
+                slot.id = `slot-${item.targetId}`;
+                slot.className = `p-3 rounded-2xl border-2 border-dashed border-slate-300 bg-white flex items-center justify-between text-xs md:text-sm font-bold text-slate-700 transition-all min-h-[56px]`;
+                slot.innerHTML = `
+                    <span>"${item.text}"</span>
+                    <span id="label-${item.targetId}" class="text-xs text-slate-400 font-normal">[Tempel Sini]</span>
+                `;
+
+                // Drag over / drop listeners
+                slot.ondragover = (e) => e.preventDefault();
+                slot.ondrop = (e) => {
+                    e.preventDefault();
+                    const draggedId = e.dataTransfer.getData('text/plain');
+                    handleMatchCheck(draggedId, item.targetId);
+                };
+
+                // Click listener for mobile fallback
+                slot.onclick = () => {
+                    if (gameState.selectedDragId) {
+                        handleMatchCheck(gameState.selectedDragId, item.targetId);
+                    }
+                };
+
+                dropContainer.appendChild(slot);
+            });
+        }
+
+        function handleMatchCheck(draggedId, targetSlotId) {
+            const dragObj = dragDropData.find(d => d.id === draggedId);
+            if (!dragObj || dragObj.matched) return;
+
+            if (dragObj.targetId === targetSlotId) {
+                // Correct Match
+                playSound('correct');
+                dragObj.matched = true;
+                gameState.dragMatchedCount++;
+                addScore(20);
+
+                const slot = document.getElementById(`slot-${targetSlotId}`);
+                slot.className = "p-3 rounded-2xl border-2 border-emerald-400 bg-emerald-100 text-emerald-900 font-bold flex items-center justify-between text-xs md:text-sm";
+                slot.innerHTML = `
+                    <span>"${dragObj.text}"</span>
+                    <span class="bg-emerald-500 text-white px-2 py-1 rounded-xl text-xs flex items-center gap-1">
+                        ${dragObj.symbol} Benar!
+                    </span>
+                `;
+
+                const dragEl = document.getElementById(`drag-${draggedId}`);
+                dragEl.className = "draggable-item bg-gray-100 border-2 border-gray-300 p-3 rounded-2xl opacity-40 cursor-not-allowed flex items-center justify-between font-bold text-sm text-slate-400";
+
+                gameState.selectedDragId = null;
+
+                if (gameState.dragMatchedCount === 5) {
+                    setTimeout(() => {
+                        alert("🎉 Hebat! Kamu berhasil memasangkan semua lambang Pancasila dengan benar!");
+                        triggerConfetti();
+                    }, 300);
+                }
+            } else {
+                playSound('wrong');
+                const slot = document.getElementById(`slot-${targetSlotId}`);
+                slot.classList.add('border-rose-400', 'bg-rose-50');
+                setTimeout(() => {
+                    slot.classList.remove('border-rose-400', 'bg-rose-50');
+                }, 800);
+            }
+        }
+
+        function resetDragDropGame() {
+            gameState.dragMatchedCount = 0;
+            gameState.selectedDragId = null;
+            dragDropData.forEach(d => d.matched = false);
+            initDragDropGame();
+            playSound('pop');
+        }
+
+        /* ==================== QUIZ LOGIC ==================== */
+        function switchQuizLevel(level) {
+            gameState.quizLevel = level;
+            gameState.quizCurrentIndex = 0;
+            
+            // Update button styles
+            const btnE = document.getElementById('btnLvlEasy');
+            const btnM = document.getElementById('btnLvlMedium');
+            const btnH = document.getElementById('btnLvlHard');
+
+            btnE.className = level === 'easy' ? "px-3 py-1.5 rounded-xl text-xs font-extrabold border-2 border-green-500 bg-green-500 text-white shadow" : "px-3 py-1.5 rounded-xl text-xs font-extrabold border-2 border-green-300 bg-green-50 text-green-800";
+            btnM.className = level === 'medium' ? "px-3 py-1.5 rounded-xl text-xs font-extrabold border-2 border-amber-500 bg-amber-500 text-white shadow" : "px-3 py-1.5 rounded-xl text-xs font-extrabold border-2 border-amber-300 bg-amber-50 text-amber-800";
+            btnH.className = level === 'hard' ? "px-3 py-1.5 rounded-xl text-xs font-extrabold border-2 border-rose-500 bg-rose-500 text-white shadow" : "px-3 py-1.5 rounded-xl text-xs font-extrabold border-2 border-rose-300 bg-rose-50 text-rose-800";
+
+            loadQuizQuestion();
+            playSound('pop');
+        }
+
+        function loadQuizQuestion() {
+            const list = quizQuestions[gameState.quizLevel];
+            const q = list[gameState.quizCurrentIndex];
+            gameState.quizAnswered = false;
+
+            document.getElementById('quizQuestionTracker').innerText = `Level ${gameState.quizLevel.toUpperCase()} - Soal ${gameState.quizCurrentIndex + 1} dari ${list.length}`;
+            document.getElementById('quizScoreTracker').innerText = `Skor Kuis: ${gameState.quizScore}`;
+            document.getElementById('quizProgressBar').style.width = `${((gameState.quizCurrentIndex + 1) / list.length) * 100}%`;
+            
+            document.getElementById('quizQuestionText').innerText = q.q;
+            document.getElementById('quizFeedbackBox').classList.add('hidden');
+            document.getElementById('btnRetryQuiz').classList.add('hidden');
+
+            const container = document.getElementById('quizOptionsContainer');
+            container.innerHTML = q.options.map((opt, i) => `
+                <button onclick="submitQuizAnswer(${i})" id="quiz-opt-${i}" class="p-4 bg-white hover:bg-amber-100 border-2 border-amber-200 text-slate-800 font-bold rounded-2xl text-left transition-all text-sm md:text-base shadow-sm">
+                    <span class="inline-block w-6 h-6 bg-amber-200 text-slate-800 text-center rounded-lg text-xs font-black mr-2">${String.fromCharCode(65 + i)}</span>
+                    ${opt}
+                </button>
+            `).join('');
+        }
+
+        function submitQuizAnswer(optIndex) {
+            if (gameState.quizAnswered) return;
+            gameState.quizAnswered = true;
+
+            const list = quizQuestions[gameState.quizLevel];
+            const q = list[gameState.quizCurrentIndex];
+            const fb = document.getElementById('quizFeedbackBox');
+
+            if (optIndex === q.answer) {
+                playSound('correct');
+                addScore(25);
+                gameState.quizScore += 25;
+                document.getElementById(`quiz-opt-${optIndex}`).className = "p-4 bg-emerald-100 border-2 border-emerald-500 text-emerald-900 font-bold rounded-2xl text-left text-sm md:text-base shadow";
+                
+                fb.className = "p-4 rounded-2xl text-sm font-semibold border-2 bg-emerald-50 border-emerald-300 text-emerald-900 block";
+                fb.innerHTML = `✅ **BENAR!** ${q.explain}`;
+            } else {
+                playSound('wrong');
+                document.getElementById(`quiz-opt-${optIndex}`).className = "p-4 bg-rose-100 border-2 border-rose-500 text-rose-900 font-bold rounded-2xl text-left text-sm md:text-base shadow";
+                document.getElementById(`quiz-opt-${q.answer}`).className = "p-4 bg-emerald-100 border-2 border-emerald-400 text-emerald-900 font-bold rounded-2xl text-left text-sm md:text-base";
+                
+                fb.className = "p-4 rounded-2xl text-sm font-semibold border-2 bg-rose-50 border-rose-300 text-rose-900 block";
+                fb.innerHTML = `❌ **Kurang Tepat!** ${q.explain}`;
+                document.getElementById('btnRetryQuiz').classList.remove('hidden');
+            }
+
+            document.getElementById('quizScoreTracker').innerText = `Skor Kuis: ${gameState.quizScore}`;
+        }
+
+        function retryCurrentQuestion() {
+            loadQuizQuestion();
+            playSound('pop');
+        }
+
+        function nextQuizQuestion() {
+            const list = quizQuestions[gameState.quizLevel];
+            if (gameState.quizCurrentIndex < list.length - 1) {
+                gameState.quizCurrentIndex++;
+                loadQuizQuestion();
+            } else {
+                if (gameState.quizLevel === 'easy') {
+                    switchQuizLevel('medium');
+                } else if (gameState.quizLevel === 'medium') {
+                    switchQuizLevel('hard');
+                } else {
+                    showSection('hasil');
+                    triggerConfetti();
+                }
+            }
+            playSound('pop');
+        }
+
+        /* ==================== CELEBRATION & RESTART ==================== */
+        function triggerConfetti() {
+            if (typeof confetti === 'function') {
+                confetti({
+                    particleCount: 100,
+                    spread: 70,
+                    origin: { y: 0.6 }
+                });
+            }
+        }
+
+        function restartAllProgress() {
+            gameState.score = 0;
+            gameState.unlockedBadges.clear();
+            document.getElementById('globalScore').innerText = '0';
+            document.getElementById('badgeCount').innerText = '0';
+            
+            for (let i = 1; i <= 5; i++) {
+                const card = document.getElementById(`badge-card-${i}`);
+                if (card) {
+                    card.className = "p-3 rounded-2xl border-2 border-gray-200 bg-gray-50 opacity-50 flex flex-col items-center justify-center text-center transition-all";
+                }
+            }
+            resetOpenBoxGame();
+            resetDragDropGame();
+            switchQuizLevel('easy');
+            showSection('beranda');
+        }
+    </script>
+</body>
+</html>
